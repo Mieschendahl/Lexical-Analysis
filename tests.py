@@ -232,6 +232,7 @@ spaces = " \n\t"
 specials = "+-*/%=!<>,;(){}[]\"\'"
 total = lowers + uppers + digits + spaces + specials
 
+
 def test_simple(algo) -> None:
     alpha = total
     regexes = [con(Sym("\""), con(rep(altstr(lowers)), Sym("\"")))]
@@ -471,25 +472,35 @@ if __name__ == "__main__":
     algos = [Algo.DFA, Algo.MDFA, Algo.longest, Algo.lookahead, Algo.viable]
     for algo in algos:
         print(f"Testing {algo.value}")
-        clear_statistics()
-        test_null(algo)
-        test_epsilon(algo)
-        test_symbol(algo)
-        test_concat(algo)
-        test_alternative(algo)
-        test_simple(algo)
         if algo is Algo.lookahead:
+            test_null(algo)
+            test_epsilon(algo)
+            test_symbol(algo)
+            test_concat(algo)
+            test_alternative(algo)
+            test_simple(algo)
             test_repeat_shortest(algo)
             test_negate_shortest(algo)
             test_lookahead(algo)
         elif algo is Algo.viable:
+            test_null(algo)
+            test_epsilon(algo)
+            test_symbol(algo)
+            test_concat(algo)
+            test_alternative(algo)
+            test_simple(algo)
             test_repeat(algo)
             test_negate(algo)
             test_longest(algo)
             test_viable(algo)
         else:
+            test_null(algo)
+            test_epsilon(algo)
+            test_symbol(algo)
+            test_concat(algo)
+            test_alternative(algo)
+            test_simple(algo)
             test_repeat(algo)
             test_negate(algo)
             test_longest(algo)
-        save_statistics(algo.value)
     print("All tests passed successfully")

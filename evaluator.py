@@ -15,6 +15,10 @@ class Algo(Enum):
     lookahead = "lookahead"
     viable = "viable"
 
+class Mode(Enum):
+    exact = 0
+    vague = 1
+
 
 @dataclass
 class Config:
@@ -23,6 +27,7 @@ class Config:
     regexes: list[Re]
     problems: list[Union[str, list[Union[str, int]]]]
     lookaheads: Optional[list[Re]] = None
+    mode: Mode = Mode.exact
 
 
 statistics = {
@@ -90,7 +95,6 @@ def evaluate(config: Config):
 
     for i in range(0, len(config.problems), 2):
         word = cast(str, config.problems[i])
-        assertion = config.problems[i+1]
 
         try:
             clear_lexing_statistics()
@@ -131,7 +135,8 @@ def evaluate(config: Config):
             print(f"\"{word}\"")
             raise e
             
-        if assertion is not None:
+        assertion = config.problems[i+1]
+        if config.mode is Mode.exact:
             tokens = []
             for j in range(0, len(assertion), 2):
                 tokens.append(Token(cast(str, assertion[j]), cast(int, assertion[j+1])))
@@ -140,16 +145,11 @@ def evaluate(config: Config):
                 traceback.print_stack()
                 print()
 
-                # print("Regexes:")
-                # for j, regex in enumerate(config.regexes):
-                #     print(f"{j}: {regex}")
-                #     print()
-
                 print("word:")
                 print(f"\"{word}\"")
                 print()
 
-                print("Assertion:")
+                print("Assertion: (lexer left vs user right)")
                 for j in range(max(len(result), len(tokens))):
                     equality = "=="
                     if j >= len(result):
@@ -163,5 +163,25 @@ def evaluate(config: Config):
                     else:
                         b = [tokens[j].value, tokens[j].index]
                     equality = equality if a == b else "!="
-                    print(f"{a} {equality} {b}")
+                    print(f"{a} {equality} {b} ")
+                exit()
+        elif config.mode is Mode.vague:
+            if (result == [] and assertion) or (result != [] and not assertion):
+                print(f"Assertion Error for {config.algo}:")
+                traceback.print_stack()
+                print()
+
+                print("word:")
+                print(f"\"{word}\"")
+                print()
+
+                print("Assertion:")
+                if result != []:
+                    print("Lexer found valid tokenization, i.e.")
+                    for j in range(len(result)):
+                        a = [result[j].value, result[j].index]
+                        print(f"{a}")
+                else:
+                    print("Lexer did not find valid tokenization!")
+                print("But valid tokenization should exists!" if assertion else "But valid tokenization should not exists!")
                 exit()

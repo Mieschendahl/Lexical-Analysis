@@ -9,7 +9,7 @@ class DFA:
     delta: list[list[int]]
     start: int
     finish: list[list[int]]
-    stuck: int
+    stuck: int  # optional information (only computed in minimize_DFA)
 
 
 # Theoretically an MNFA
@@ -103,8 +103,7 @@ def NFA_to_DFA(al: str, rs: list[Re], nfa: NFA) -> tuple[DFA, list[list[bool]]]:
                     break
         index += 1
 
-    stuck = Tree.index_state(tree, [False for _ in nfa.start], -1)
-    return DFA(delta, 0, finish, stuck), states
+    return DFA(delta, 0, finish, -1), states
 
 
 def DFA_to_NFA(al: str, rs: list[Re], dfa: DFA) -> NFA:
@@ -151,6 +150,8 @@ def minimize_DFA(al: str, rs: list[Re], dfa: DFA) -> DFA:
         ]
         for i, _ in enumerate(dfa.delta)
     ]
+
+    # analyze DFA
     change = True
     while change:
         change = False
@@ -162,6 +163,8 @@ def minimize_DFA(al: str, rs: list[Re], dfa: DFA) -> DFA:
                     if next1 != next2 and not equal[next1][next2]:
                         equal[i][j] = False
                         change = True
+
+    # construct new DFA
     num = 0
     statemap = [-1 for _ in dfa.delta]
     for i in reversed(range(len(equal))):
@@ -171,4 +174,17 @@ def minimize_DFA(al: str, rs: list[Re], dfa: DFA) -> DFA:
         for j, _ in enumerate(equal[i]):
             if equal[i][j]:
                 statemap[j] = statemap[i]
-    return remap_states(al, rs, dfa, statemap)
+
+    # compute stuck state if one exists
+    dfa = remap_states(al, rs, dfa, statemap)
+    for i, edges in enumerate(dfa.delta):
+        loop = True
+        for j, edge in enumerate(edges):
+            if i != edge:
+                loop = False
+                break
+        if loop and len(dfa.finish[i]) == 0:
+            dfa.stuck = i
+            break
+
+    return dfa
