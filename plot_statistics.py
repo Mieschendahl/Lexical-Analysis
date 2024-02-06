@@ -4,12 +4,11 @@ from evaluator import *
 
 # algos = [Algo.DFA, Algo.MDFA, Algo.longest, Algo.lookahead, Algo.viable]
 algos = [Algo.DFA, Algo.MDFA, Algo.longest]
-colors = ["brown", "green", "blue", "red", "purple"]
-shapes = ["x", "+", "2", "3", "4"]
-stats = {}
+# algos = [Algo.MDFA, Algo.longest, Algo.lookahead]
+colors = ["brown", "green", "blue", "red", "orange"]
+shapes = [".", ".", ".", ".", "."]
 
-for algo in algos:
-    stats[algo] = load_statistics(algo.value)
+stats = {algo: load_statistics(algo.value) for algo in algos}
 
 for i, algo in enumerate(algos):
     data = stats[algo]["lexing_steps"]
@@ -27,15 +26,16 @@ for i, algo in enumerate(algos):
 
     c = [colors[i]] * len(x)
     s = shapes[i]
-    plt.scatter(x, y, c=c, marker=s, label=algo.value)
+    plt.scatter(x, y, c=c, marker="x", label=algo.value)
 
     x = []
     y = []
     for j, key in enumerate(sorted(dct)):
         x.append(key)
         y.append(sum(dct[key]) / len(dct[key]))
-    plt.plot(x, y, c=colors[i])
-    
+    plt.plot(x, y, c=colors[i], marker=".")
 
+plt.xlabel("Number of Subexpressions")
+plt.ylabel("Number of States")
 plt.legend()
 plt.show()
