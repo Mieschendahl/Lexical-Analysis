@@ -11,6 +11,15 @@ class Token:
     index: int
 
 
+lexing_statistics = {
+    "transitions": 0
+}
+
+
+def clear_lexing_statistics():
+    lexing_statistics["transitions"] = 0
+
+
 def run_DFA(lookup: Callable[[str], int], dfa: list[DFA], w: str, start: int) -> tuple[Token, int]:
     index = end = start
     r = -1
@@ -30,6 +39,7 @@ def run_DFA(lookup: Callable[[str], int], dfa: list[DFA], w: str, start: int) ->
             return (Token(w[start:end], r), end)
         for i, state in enumerate(states):
             states[i] = dfa[i].delta[state][lookup(w[index])]
+            lexing_statistics["transitions"] += 1
         index += 1
 
 
@@ -56,6 +66,7 @@ def run_MDFA(lookup: Callable[[str], int], mdfa: DFA, w: str, start: int) -> tup
         if state == mdfa.stuck or index == len(w):
             return (Token(w[start:end], r), end)
         state = mdfa.delta[state][lookup(w[index])]
+        lexing_statistics["transitions"] += 1
         index += 1
 
 
@@ -82,6 +93,7 @@ def MP_to_MO(lookup: Callable[[str], int], mp: DFA, states: list[list[bool]], w:
             return lambda q, i: states[ms[i]][q]
         index -= 1
         state = mp.delta[state][lookup(w[index])]
+        lexing_statistics["transitions"] += 1
 
 
 def run_longest(lookup: Callable[[str], int], mo: Callable[[int, int], bool], mdfa: DFA, w: str, start: int) -> tuple[Token, int]:
@@ -95,6 +107,7 @@ def run_longest(lookup: Callable[[str], int], mo: Callable[[int, int], bool], md
         if index == len(w) or not mo(state, index):
             return (Token(w[start:end], r), end)
         state = mdfa.delta[state][lookup(w[index])]
+        lexing_statistics["transitions"] += 1
         index += 1
 
 
@@ -113,20 +126,22 @@ def lex_longest(lookup: Callable[[str], int], lex: tuple[DFA, list[list[bool]], 
             return tokenization
 
 
-def run_lookahead(lookup: Callable[[str], int], mo: list[Callable[[int], bool]], mdfa: DFA, w: str, start: int) -> tuple[Token, int]:
+def run_lookahead(lookup: Callable[[str], int], mo: list[Callable[[int, int], bool]],
+    starts: list[int], mdfa: DFA, w: str, start: int) -> tuple[Token, int]:
     index = end = start
     r = -1
     state = mdfa.start
     while True:
         if len(mdfa.finish[state]) > 0:
             for i in mdfa.finish[state]:
-                if mo[i](index):
+                if mo[i](starts[i], index):
                     end = index
                     r = i
                     break
         if index == len(w) or r != -1:
             return (Token(w[start:end], r), end)
         state = mdfa.delta[state][lookup(w[index])]
+        lexing_statistics["transitions"] += 1
         index += 1
 
 
@@ -134,13 +149,12 @@ def lex_lookahead(lookup: Callable[[str], int], lex: tuple[list[DFA], list[list[
     mp, states, starts, mdfa = lex
     mo = []
     for i, _ in enumerate(mp):
-        m = MP_to_MO(lookup, mp[i], states[i], w)
-        mo.append(lambda j: m(starts[i], j))
+        mo.append(MP_to_MO(lookup, mp[i], states[i], w))
 
     tokenization = []
     index = 0
     while True:
-        t, index = run_lookahead(lookup, mo, mdfa, w, index)
+        t, index = run_lookahead(lookup, mo, starts, mdfa, w, index)
         if t.index == -1 or (t.value == "" and w != ""):
             return []
         tokenization.append(t)

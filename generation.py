@@ -132,8 +132,9 @@ def generate_lookahead_(al: str, lo: Re) -> tuple[DFA, list[list[bool]], DFA]:
         delta.append([-1 for _ in al])
 
         for i, _ in enumerate(al):
-            next_state = [len(f) > 0 for f in ldfa.finish]
-            for j, b in enumerate(state):
+            # next_state = [len(f) > 0 for f in ldfa.finish]  # for matching lookahead to prefixes of the rest of the word
+            next_state = [False] * len(ldfa.delta)  # for matching lookahead to the whole rest of the word
+            for j, b in enumerate(state): 
                 if b:
                     next_state = [a or b for a, b in zip(next_state, rdelta[j][i])]
             stored = Tree.index_state(tree, next_state, len(states))
@@ -153,7 +154,6 @@ def generate_lookahead(al: str, rs: list[Re], lo: list[Re]) -> tuple[list[DFA], 
     mp = []
     states = []
     starts = []
-
     for i, _ in enumerate(lo):
         m, s, l = generate_lookahead_(al, lo[i])
         mp.append(m)

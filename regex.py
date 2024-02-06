@@ -52,6 +52,9 @@ class Negation(Re):
 Neg = Negation
 
 
+All = Negation(Null())
+
+
 def concat(r1: Re, r2: Re) -> Re:
     match (r1, r2):
         case (Null(), _) | (_, Null()):
@@ -111,7 +114,7 @@ repp = repeat_plus
 
 
 def negate_one(re: Re) -> Re:
-    return neg(con(re, neg(Null())))
+    return neg(alt(Eps(), con(re, neg(Null()))))
 negg = negate_one
 
 
@@ -133,3 +136,14 @@ constr = concat_string
 def alternative_string(string: str) -> Re:
     return altls(map(Sym, string))
 altstr = alternative_string
+
+
+def size(re: Re) -> int:
+    match re:
+        case Null() | Eps() | Sym(_):
+            return 1
+        case Alt(r1, r2) | Con(r1, r2):
+            return size(r1) + size(r2) + 1
+        case Rep(r) | Neg(r):
+            return size(r) + 1
+    raise Exception(f"Unexpected regex '{re}'")

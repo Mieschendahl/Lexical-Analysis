@@ -2,16 +2,18 @@ import traceback
 from dataclasses import dataclass
 from typing import Optional, cast, Any
 from enum import Enum
+from regex import *
 from generation import *
 from lexing import *
+from time import time
 
 
 class Algo(Enum):
-    DFA = 0
-    MDFA = 1
-    longest = 2
-    lookahead = 3
-    viable = 4
+    DFA = "DFA"
+    MDFA = "MDFA"
+    longest = "longest"
+    lookahead = "lookahead"
+    viable = "viable"
 
 
 @dataclass
@@ -23,35 +25,100 @@ class Config:
     lookaheads: Optional[list[Re]] = None
 
 
+statistics = {
+    "generation_size": [],
+    "generation_time": [],
+    "lexing_steps": [],
+    "lexing_time": [],
+}
+
+
+def clear_statistics():
+    statistics["generation_size"] = []
+    statistics["generation_time"] = []
+    statistics["lexing_steps"] = []
+    statistics["lexing_time"] = []
+
+
+def save_statistics(filename):
+    with open("./statistics/" + filename + ".py", "w") as file:
+        file.write(repr(statistics))
+
+def load_statistics(filename):
+    with open("./statistics/" + filename + ".py", "r") as file:
+        return eval(file.read())
+    
+
+
 def evaluate(config: Config):
     lookup = make_lookup(config.alpha)
+    regexes_size = sum(size(re) for re in config.regexes)
+    lex_size = -1
     if config.algo is Algo.DFA:
+        start = time()
         lex: Any = generate_DFA(config.alpha, config.regexes)
+        end = time()
+        lex_size = sum(len(l.delta) for l in lex)
     elif config.algo is Algo.MDFA:
+        start = time()
         lex = generate_MDFA(config.alpha, config.regexes)
+        end = time()
+        lex_size = len(lex.delta)
     elif config.algo is Algo.longest:
+        start = time()
         lex = generate_longest(config.alpha, config.regexes)
+        end = time()
+        lex_size = len(lex[0].delta) + len(lex[2].delta)
     elif config.algo is Algo.lookahead:
         lookaheads = config.lookaheads
         if lookaheads is None:
-            lookaheads = [Eps() for _ in config.regexes]
+            lookaheads = [All for _ in config.regexes]
+        if len(lookaheads) != len(config.regexes):
+            raise Exception("Regexes and lookaheads do not pair up!")
+        regexes_size += sum(size(re) for re in lookaheads)
+        start = time()
         lex = generate_lookahead(config.alpha, config.regexes, lookaheads)
+        end = time()
+        lex_size = sum(map(lambda l: len(l.delta), lex[0])) + len(lex[3].delta)
     elif config.algo is Algo.viable:
+        start = time()
         lex = generate_viable(config.alpha, config.regexes)
+        end = time()
+        lex_size = len(lex[0].delta) + len(lex[2].delta)
+    statistics["generation_size"].append((regexes_size, lex_size))
+    statistics["generation_time"].append((regexes_size, end - start))
+
     for i in range(0, len(config.problems), 2):
         word = cast(str, config.problems[i])
         assertion = config.problems[i+1]
+
         try:
+            clear_lexing_statistics()
+
             if config.algo is Algo.DFA:
+                start = time()
                 result: Any = lex_DFA(lookup, lex, word)
+                end = time()
             elif config.algo is Algo.MDFA:
+                start = time()
                 result = lex_MDFA(lookup, lex, word)
+                end = time()
             elif config.algo is Algo.longest:
+                start = time()
                 result = lex_longest(lookup, lex, word)
+                end = time()
             elif config.algo is Algo.lookahead:
+                start = time()
                 result = lex_lookahead(lookup, lex, word)
+                end = time()
             elif config.algo is Algo.viable:
+                start = time()
                 result = lex_longest(lookup, lex, word)
+                end = time()
+
+            statistics["lexing_steps"].append((len(word), lexing_statistics["transitions"]))
+            statistics["lexing_time"].append((len(word), end - start))
+        
         except Exception as e:
             print(f"Error for {config.algo}:")
             print()
@@ -73,10 +140,10 @@ def evaluate(config: Config):
                 traceback.print_stack()
                 print()
 
-                print("Regexes:")
-                for j, regex in enumerate(config.regexes):
-                    print(f"{j}: {regex}")
-                print()
+                # print("Regexes:")
+                # for j, regex in enumerate(config.regexes):
+                #     print(f"{j}: {regex}")
+                #     print()
 
                 print("word:")
                 print(f"\"{word}\"")
@@ -89,12 +156,12 @@ def evaluate(config: Config):
                         a: Any = "Missing"
                         equality = "!="
                     else:
-                        a = [result[j].value, config.regexes[result[j].index]]
+                        a = [result[j].value, result[j].index]
                     if j >= len(tokens):
                         b: Any = "Missing"
                         equality = "!="
                     else:
-                        b = [tokens[j].value, config.regexes[tokens[j].index]]
+                        b = [tokens[j].value, tokens[j].index]
                     equality = equality if a == b else "!="
                     print(f"{a} {equality} {b}")
                 exit()
