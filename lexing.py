@@ -38,8 +38,9 @@ def run_DFA(lookup: Callable[[str], int], dfa: list[DFA], w: str, start: int) ->
         if stuck or index == len(w):
             return (Token(w[start:end], r), end)
         for i, state in enumerate(states):
-            states[i] = dfa[i].delta[state][lookup(w[index])]
-            lexing_statistics["transitions"] += 1
+            if state != dfa[i].stuck:
+                states[i] = dfa[i].delta[state][lookup(w[index])]
+                lexing_statistics["transitions"] += 1
         index += 1
 
 
