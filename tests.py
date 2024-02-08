@@ -236,7 +236,6 @@ total = lowers + uppers + digits + spaces + specials
 def test_simple(algo) -> None:
     alpha = total
     regexes = [con(Sym("\""), con(rep(altstr(lowers)), Sym("\"")))]
-    lookaheads = [Eps()]
     problems = [
         "", [],
         "a", [],
@@ -254,7 +253,6 @@ def test_simple(algo) -> None:
         con(Sym("\""), con(rep(altstr(lowers)), Sym("\""))),
         con(Sym("'"), con(rep(altstr(lowers)), Sym("'")))
     ]
-    lookaheads = [Eps()]
     problems = [
         "", [],
         "a", [],

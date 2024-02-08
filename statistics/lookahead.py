@@ -1,1 +1,0 @@
-{'generation_size': [], 'generation_time': [], 'lexing_steps': [], 'lexing_time': []}

@@ -1,3 +1,4 @@
+import os, errno
 import traceback
 from dataclasses import dataclass
 from typing import Optional, cast, Any
@@ -45,12 +46,20 @@ def clear_statistics():
     statistics["lexing_time"] = []
 
 
-def save_statistics(filename):
-    with open("./statistics/" + filename + ".py", "w") as file:
+def save_statistics(directory, filename):
+    directory = "./statistics/" + directory + "/"
+    try:
+        os.makedirs(directory)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+
+    with open(directory + filename + ".py", "w") as file:
         file.write(repr(statistics))
 
-def load_statistics(filename):
-    with open("./statistics/" + filename + ".py", "r") as file:
+def load_statistics(directory, filename):
+    directory = "./statistics/" + directory + "/"
+    with open(directory + filename + ".py", "r") as file:
         return eval(file.read())
     
 

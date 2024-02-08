@@ -118,6 +118,11 @@ def negate_one(re: Re) -> Re:
 negg = negate_one
 
 
+def negate_zero(re: Re) -> Re:
+    return neg(con(re, neg(Null())))
+negz = negate_zero
+
+
 def concat_list(rs: Iterable[Re]) -> Re:
     return reduce(lambda out, r: con(out, r), rs, cast(Re, Eps()))
 conls = concat_list
