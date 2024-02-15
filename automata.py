@@ -21,7 +21,7 @@ class NFA:
     finish: list[list[bool]]
 
 
-# Merge two NFAs into one
+# Merge multiple NFAs into one
 def merge_NFAs(al: str, rs: list[Re], nfas: list[NFA]) -> NFA:
     num = sum(len(nfa.delta) for nfa in nfas)
     delta = [[[False for _ in range(num)] for _ in al] for _ in range(num)]
