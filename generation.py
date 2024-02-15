@@ -5,6 +5,8 @@ from regex import *
 from automata import *
 
 
+# Convert regex to an equivalent DFA using a modified Thompson's construction
+# that also works for regexes with negation
 def Regex_to_DFA(al: str, rs: list[Re], index: int, re: Re) -> DFA:
     new = None
     match re:
@@ -65,17 +67,20 @@ def Regex_to_DFA(al: str, rs: list[Re], index: int, re: Re) -> DFA:
     return minimize_DFA(al, rs, NFA_to_DFA(al, rs, new)[0])
 
 
+# Generation stage for the DFA algorithm
 def generate_DFA(al: str, rs: list[Re]) -> list[DFA]:
     dfa = [Regex_to_DFA(al, [re], 0, re) for re in rs]
     return dfa
 
 
+# Generation stage for the MDFA algorithm
 def generate_MDFA(al: str, rs: list[Re]) -> DFA:
     nfas = [DFA_to_NFA(al, rs, Regex_to_DFA(al, rs, i, re)) for i, re in enumerate(rs)]
     dfa = minimize_DFA(al, rs, NFA_to_DFA(al, rs, merge_NFAs(al, rs, nfas))[0])
     return dfa
 
 
+# Reverses transitions for use in the match predictor constructions
 def reverse_delta(al: str, delta: list[list[int]]) -> list[list[list[bool]]]:
     num = len(delta)
     rdelta = [[[False for _ in range(num)] for _ in al] for _ in range(num)]
@@ -85,6 +90,7 @@ def reverse_delta(al: str, delta: list[list[int]]) -> list[list[list[bool]]]:
     return rdelta
 
 
+# Generation stage for the longest match algorithm
 def generate_longest(al: str, rs: list[Re]) -> tuple[DFA, list[list[bool]], DFA]:
     mdfa = generate_MDFA(al, rs)
     rdelta = reverse_delta(al, mdfa.delta)
@@ -116,6 +122,7 @@ def generate_longest(al: str, rs: list[Re]) -> tuple[DFA, list[list[bool]], DFA]
     return DFA(delta, 0, finish, -1), states, mdfa
 
 
+# Helper function for the generation stage of the lookahead match algorithm
 def generate_lookahead_(al: str, lo: Re) -> tuple[DFA, list[list[bool]], DFA]:
     ldfa = Regex_to_DFA(al, [lo], 0, lo) 
     rdelta = reverse_delta(al, ldfa.delta)
@@ -132,8 +139,8 @@ def generate_lookahead_(al: str, lo: Re) -> tuple[DFA, list[list[bool]], DFA]:
         delta.append([-1 for _ in al])
 
         for i, _ in enumerate(al):
-            # next_state = [len(f) > 0 for f in ldfa.finish]  # for matching lookahead to prefixes of the rest of the word
-            next_state = [False] * len(ldfa.delta)  # for matching lookahead to the whole rest of the word
+            # next_state = [len(f) > 0 for f in ldfa.finish]  # for matching the lookahead to prefixes of the rest of the word
+            next_state = [False] * len(ldfa.delta)  # for matching the lookahead to the whole rest of the word
             for j, b in enumerate(state): 
                 if b:
                     next_state = [a or b for a, b in zip(next_state, rdelta[j][i])]
@@ -148,20 +155,26 @@ def generate_lookahead_(al: str, lo: Re) -> tuple[DFA, list[list[bool]], DFA]:
     return DFA(delta, 0, finish, -1), states, ldfa
 
 
+
+# Generation stage for the lookahead match algorithm
 def generate_lookahead(al: str, rs: list[Re], lo: list[Re]) -> tuple[list[DFA], list[list[list[bool]]], list[int], DFA]:
     mdfa = generate_MDFA(al, rs)
 
     mp = []
     states = []
     starts = []
+    # Create a match predictor for each lookahead
     for i, _ in enumerate(lo):
         m, s, l = generate_lookahead_(al, lo[i])
         mp.append(m)
         states.append(s)
         starts.append(l.start)
+
+    # We additionally return the initial states for fixing the input state in the match oracle queries
     return mp, states, starts, mdfa
 
 
+# Generation stage for the viable match algorithm
 def generate_viable(al: str, rs: list[Re]) -> tuple[DFA, list[list[bool]], DFA]:
     mdfa = generate_MDFA(al, rs)
     rep_rs = rep(altls(rs))

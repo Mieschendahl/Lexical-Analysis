@@ -11,6 +11,9 @@ class Token:
     index: int
 
 
+### Statistic generation ###
+
+
 lexing_statistics = {
     "transitions": 0
 }
@@ -18,6 +21,9 @@ lexing_statistics = {
 
 def clear_lexing_statistics():
     lexing_statistics["transitions"] = 0
+
+
+### Lexing stage for the DFA algorithm ###
 
 
 def run_DFA(lookup: Callable[[str], int], dfa: list[DFA], w: str, start: int) -> tuple[Token, int]:
@@ -55,6 +61,10 @@ def lex_DFA(lookup: Callable[[str], int], dfa: list[DFA], w: str) -> list[Token]
             return tokenization
 
 
+
+### Lexing stage for the MDFA algorithm (the DFA class also functions as the MDFA class) ###
+
+
 def run_MDFA(lookup: Callable[[str], int], mdfa: DFA, w: str, start: int) -> tuple[Token, int]:
     index = end = start
     r = -1
@@ -82,7 +92,10 @@ def lex_MDFA(lookup: Callable[[str], int], mdfa: DFA, w: str) -> list[Token]:
             return tokenization
 
 
-# Match Predictor to Oracle
+### Lexing stage for the longest match algorithm (also functions as the lexing stage of the viable match algorithm!) ###
+
+
+# Produces a match oracle directly from a match predictor
 def MP_to_MO(lookup: Callable[[str], int], mp: DFA, states: list[list[bool]], w: str) -> Callable[[int, int], bool]:
     index = len(w)
     ms = [-1] * (len(w) + 1)
@@ -124,6 +137,9 @@ def lex_longest(lookup: Callable[[str], int], lex: tuple[DFA, list[list[bool]], 
         tokenization.append(t)
         if index == len(w):
             return tokenization
+
+
+### Lexing stage for the lookahead match algorithm ###
 
 
 def run_lookahead(lookup: Callable[[str], int], mo: list[Callable[[int, int], bool]],

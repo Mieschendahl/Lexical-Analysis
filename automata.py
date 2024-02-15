@@ -3,7 +3,7 @@ from utils import *
 from regex import *
 
 
-# Theoretically an MDFA
+# Is used both as a DFA and an MDFA
 @dataclass
 class DFA:
     delta: list[list[int]]
@@ -12,7 +12,7 @@ class DFA:
     stuck: int  # optional information (only computed in minimize_DFA)
 
 
-# Theoretically an MNFA
+# Is used both as a NFA and an MNFA
 @dataclass
 class NFA:
     delta: list[list[list[bool]]]
@@ -21,6 +21,7 @@ class NFA:
     finish: list[list[bool]]
 
 
+# Merge two NFAs into one
 def merge_NFAs(al: str, rs: list[Re], nfas: list[NFA]) -> NFA:
     num = sum(len(nfa.delta) for nfa in nfas)
     delta = [[[False for _ in range(num)] for _ in al] for _ in range(num)]
@@ -41,6 +42,7 @@ def merge_NFAs(al: str, rs: list[Re], nfas: list[NFA]) -> NFA:
     return NFA(delta, epsilon, start, finish)
 
 
+# Apply the epsilon closure to a state
 def epsilon_reachable(nfa: NFA, states: list[bool], state: int) -> None:
     states[state] = True
     for i, s in enumerate(nfa.epsilon[state]):
@@ -48,6 +50,7 @@ def epsilon_reachable(nfa: NFA, states: list[bool], state: int) -> None:
             epsilon_reachable(nfa, states, i)
 
 
+# Make all indirect epsilon transitions directly available for a state
 def infer_epsilon_closure(al: str, rs: list[Re], nfa: NFA) -> None:
     for i, edges in enumerate(nfa.delta):
         reached = [False] * len(nfa.delta)
@@ -61,6 +64,7 @@ def infer_epsilon_closure(al: str, rs: list[Re], nfa: NFA) -> None:
         nfa.epsilon[i] = reached
 
 
+# Apply the epsilon closure to a set of states, assuming that infer_epsilon_closure was previously applied
 def epsilon_closure(nfa: NFA, state: list[bool]) -> list[bool]:
     next_state = [False] * len(nfa.delta)
     for i, b in enumerate(state):
@@ -69,6 +73,7 @@ def epsilon_closure(nfa: NFA, state: list[bool]) -> list[bool]:
     return next_state
 
 
+# Convert an NFA to an equivalent DFA using the powerset construction (same for MNFA and MDFA)
 def NFA_to_DFA(al: str, rs: list[Re], nfa: NFA) -> tuple[DFA, list[list[bool]]]:
     infer_epsilon_closure(al, rs, nfa)
 
@@ -106,6 +111,7 @@ def NFA_to_DFA(al: str, rs: list[Re], nfa: NFA) -> tuple[DFA, list[list[bool]]]:
     return DFA(delta, 0, finish, -1), states
 
 
+# Convert a DFA to an equivalent NFA (same for MDFA and MNFA)
 def DFA_to_NFA(al: str, rs: list[Re], dfa: DFA) -> NFA:
     num = len(dfa.delta)
     delta = [[[False for _ in range(num)] for _ in al] for _ in range(num)]
@@ -122,6 +128,7 @@ def DFA_to_NFA(al: str, rs: list[Re], dfa: DFA) -> NFA:
     return NFA(delta, epsilon, start, finish)
 
 
+# Remap state indicies to e.g. remove unessecary states
 def remap_states(al: str, rs: list[Re], dfa: DFA, statemap: list[int]) -> DFA:
     num = max(statemap, default=-1) + 1
     delta = [[-1 for _ in al] for _ in range(num)]
@@ -137,6 +144,7 @@ def remap_states(al: str, rs: list[Re], dfa: DFA, statemap: list[int]) -> DFA:
     return DFA(delta, start, finish, stuck)
 
 
+# Minimize a DFA
 def minimize_DFA(al: str, rs: list[Re], dfa: DFA) -> DFA:
     order = lambda x, y: (y, x) if x < y else (x, y)
     equal = [
@@ -164,7 +172,7 @@ def minimize_DFA(al: str, rs: list[Re], dfa: DFA) -> DFA:
                         equal[i][j] = False
                         change = True
 
-    # construct new DFA
+    # construct minimized DFA
     num = 0
     statemap = [-1 for _ in dfa.delta]
     for i in reversed(range(len(equal))):
@@ -174,9 +182,9 @@ def minimize_DFA(al: str, rs: list[Re], dfa: DFA) -> DFA:
         for j, _ in enumerate(equal[i]):
             if equal[i][j]:
                 statemap[j] = statemap[i]
+    dfa = remap_states(al, rs, dfa, statemap)
 
     # compute stuck state if one exists
-    dfa = remap_states(al, rs, dfa, statemap)
     for i, edges in enumerate(dfa.delta):
         loop = True
         for j, edge in enumerate(edges):

@@ -103,6 +103,9 @@ def negate(re: Re) -> Re:
 neg = negate
 
 
+#### Conviniences ###
+
+
 def optional(re: Re) -> Re:
     return alternative(re, Eps())
 opt = optional
@@ -141,6 +144,9 @@ constr = concat_string
 def alternative_string(string: str) -> Re:
     return altls(map(Sym, string))
 altstr = alternative_string
+
+
+### Metrics ###
 
 
 def size(re: Re) -> int:

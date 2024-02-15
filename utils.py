@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Callable
 
 
+# Used to store and index a set of states given in List[Bool] form
 @dataclass
 class Tree:
     value: Optional[int] = None
@@ -35,6 +36,8 @@ class Tree:
         return tree.get_value(store)
 
 
+# Returns a lookup table that maps each symbol in an alphabet to an index
+# We can not use ord because the returned indices then might be bigger than necessary!
 def make_lookup(al: str) -> Callable[[str], int]:
     table = [-1] * (max(map(ord, al), default=0) + 1)
     for i, a in enumerate(al):
